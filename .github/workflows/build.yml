@@ -20,7 +20,7 @@ jobs:
           pip3 install --upgrade Cython==0.29.33 virtualenv
       - name: Install Buildozer
         run: pip install buildozer
-      - name: Ensure buildozer.spec exists and is configured
+      - name: Configure buildozer.spec
         run: |
           if [ ! -f buildozer.spec ]; then
             buildozer init
@@ -34,9 +34,24 @@ jobs:
           sed -i 's/^android.ndk = .*/android.ndk = 23b/' buildozer.spec
           sed -i 's/^android.sdk = .*/android.sdk = 31/' buildozer.spec
           sed -i 's/^#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
+          sed -i 's/^#android.build_tools_version = .*/android.build_tools_version = 33.0.0/' buildozer.spec
           sed -i 's/^#icon.filename = %(source.dir)s\/icon.png/icon.filename = %(source.dir)s\/icon.png/' buildozer.spec
       - name: Clean previous builds
         run: rm -rf .buildozer ~/.cache/buildozer
+      - name: Manually install Android SDK command-line tools, licenses, and build-tools
+        run: |
+          export ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
+          mkdir -p $ANDROID_SDK_ROOT
+          # Скачиваем commandlinetools, если ещё нет
+          if [ ! -f $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager ]; then
+            wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q commandlinetools-linux-11076708_latest.zip -d $ANDROID_SDK_ROOT/cmdline-tools
+            mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest
+          fi
+          # Принимаем лицензии
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses > /dev/null 2>&1
+          # Устанавливаем build-tools 33.0.0 и платформу android-31
+          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "build-tools;33.0.0" "platforms;android-31" "platform-tools"
       - name: Build APK
         run: buildozer android debug
       - name: Upload APK artifact
