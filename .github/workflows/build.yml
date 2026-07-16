@@ -38,20 +38,21 @@ jobs:
           sed -i 's/^#icon.filename = %(source.dir)s\/icon.png/icon.filename = %(source.dir)s\/icon.png/' buildozer.spec
       - name: Clean previous builds
         run: rm -rf .buildozer ~/.cache/buildozer
-      - name: Manually install Android SDK command-line tools, licenses, and build-tools
+      - name: Manually set up Android SDK tools (to satisfy Buildozer)
         run: |
           export ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
           mkdir -p $ANDROID_SDK_ROOT
-          # Скачиваем commandlinetools, если ещё нет
-          if [ ! -f $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager ]; then
-            wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
-            unzip -q commandlinetools-linux-11076708_latest.zip -d $ANDROID_SDK_ROOT/cmdline-tools
-            mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest
-          fi
+          # Скачиваем commandlinetools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q commandlinetools-linux-11076708_latest.zip
+          # Перемещаем содержимое в tools/ (Buildozer ожидает sdkmanager в tools/bin/)
+          mkdir -p $ANDROID_SDK_ROOT/tools
+          mv cmdline-tools/* $ANDROID_SDK_ROOT/tools/
+          # Теперь sdkmanager должен быть по пути tools/bin/sdkmanager
           # Принимаем лицензии
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses > /dev/null 2>&1
-          # Устанавливаем build-tools 33.0.0 и платформу android-31
-          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "build-tools;33.0.0" "platforms;android-31" "platform-tools"
+          yes | $ANDROID_SDK_ROOT/tools/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses > /dev/null 2>&1
+          # Устанавливаем нужные компоненты
+          $ANDROID_SDK_ROOT/tools/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "build-tools;33.0.0" "platforms;android-31" "platform-tools"
       - name: Build APK
         run: buildozer android debug
       - name: Upload APK artifact
