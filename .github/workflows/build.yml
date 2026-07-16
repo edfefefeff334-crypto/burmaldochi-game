@@ -33,17 +33,10 @@ jobs:
           sed -i 's/^android.minapi = .*/android.minapi = 21/' buildozer.spec
           sed -i 's/^android.ndk = .*/android.ndk = 23b/' buildozer.spec
           sed -i 's/^android.sdk = .*/android.sdk = 31/' buildozer.spec
-          sed -i 's/^#android.sdk_path = .*/android.sdk_path = ~\/.buildozer\/android\/platform\/android-sdk/' buildozer.spec
-          sed -i 's/^#android.ndk_path = .*/android.ndk_path = ~\/.buildozer\/android\/platform\/android-ndk-r23b/' buildozer.spec
+          sed -i 's/^#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
           sed -i 's/^#icon.filename = %(source.dir)s\/icon.png/icon.filename = %(source.dir)s\/icon.png/' buildozer.spec
-      - name: Clean all build caches
-        run: |
-          rm -rf .buildozer
-          rm -rf ~/.cache/buildozer
-      - name: Force update Android SDK (download build-tools, etc.)
-        run: |
-          export PATH=$HOME/.buildozer/android/platform/apache-ant-1.9.4/bin:$PATH
-          buildozer android update
+      - name: Clean previous builds
+        run: rm -rf .buildozer ~/.cache/buildozer
       - name: Build APK
         run: buildozer android debug
       - name: Upload APK artifact
